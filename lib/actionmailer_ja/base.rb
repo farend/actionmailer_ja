@@ -42,12 +42,11 @@ module ActionMailer
     def quote_if_necessary_with_ja(text, charset)
       text = replace_safe_char(text) if auto_replace_safe_char
       if auto_base64_encode
-        NKF.nkf('-jW -m0', text).strip
+        NKF.nkf('-jW -m0 --oc=CP50220', text).strip
       else
-        quote_if_necessary_without_ja(charset, text)
+        quote_if_necessary_without_ja(text, charset)
       end
     end
-
 
     # Locale があるかどうかで GetText が読み込まれたかを判断する
     def gettext?
@@ -57,14 +56,16 @@ module ActionMailer
     def create_mail_with_ja #:nodoc:
       create_mail_without_ja
       (@mail.parts.empty? ? [@mail] : @mail.parts).each { |part|
-        if part.content_type == 'text/plain'
+        if part.content_type == 'text/plain' || part.content_type == 'text/html'
           if ((!gettext?) || (gettext? && Locale.get.language == "ja"))
             if self.mobile && self.mobile.softbank?
               part.charset = 'utf-8'
               part.body = NKF.nkf('-w', part.body)
+              part.transfer_encoding = '8bit'
             else
               part.charset = 'iso-2022-jp'
-              part.body = NKF.nkf('-j', part.body)
+              part.body = NKF.nkf('-j --oc=CP50220', part.body)
+              part.transfer_encoding = '7bit'
             end
           end
         end

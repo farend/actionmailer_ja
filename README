@@ -61,21 +61,21 @@ ActionMailer は Subject, From, Cc, Recipients に日本語を使うと文字化
 ActionMailer::Ja::auto_base64_encode = false
 
 
-自動エンコード機能を使わない場合、例えば以下のようにして手動で base64 を呼び出します。 
+自動エンコード機能を使わない場合、例えば以下のように quote_if_necessary を利用します。 
 
 
 class ActionmailerJaTest < ActionMailer::Base
   def test(user_name, email)
     @subject     = "㈱テスト№①"
-    @recipients  = base64("#{user_name} <#{email}>")
-    @from        = base64("#{$ADMIN_NAME} <#{$ADMIN_MAIL}>")
+    @recipients  = quote_if_necessary("#{user_name} <#{email}>", 'iso-2022-jp')
+    @from        = quote_if_necessary("#{$ADMIN_NAME} <#{$ADMIN_MAIL}>", 'iso-2022-jp')
   end
 end
 
 
 *機種依存文字を代替文字に置換する機能の提供。
 
-iPhone などの MUA では Subject などに①などの機種依存文字を使うと文字化けしてしまいます。
+iPhone の Mail.app などの MUA では Subject などに①などの機種依存文字を使うと文字化けしてしまいます。
 
 以下のように auto_replace_safe_char を true にすることで、自動的に機種依存文字が置換されます。（デフォルトfalse）
 
@@ -96,12 +96,14 @@ end
 この結果、@subject は「（株）テストNo.(1)」のように変換されます。 
 
 
+
 *Ruby-GetText との共存
 特に設定は必要ありません。
 
 
-*Special Thanks
+*Patch Contributers
 knu : http://github.com/knu/
+beyond : http://github.com/beyond/
 
 
-Copyright (c) 2009 Kei Kusakari, released under the MIT license
+Copyright (c) 2009 KUSAKARI Kei, released under the MIT license
