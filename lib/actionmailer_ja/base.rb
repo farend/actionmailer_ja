@@ -23,9 +23,6 @@ module ActionMailer
     @@auto_replace_safe_char = false
     mattr_accessor :auto_replace_safe_char
 
-    # Mobile Mail Address
-    attr_accessor :mobile
-
     # Mobile Layout
     attr_accessor :mobile_layout
 
@@ -58,7 +55,7 @@ module ActionMailer
       (@mail.parts.empty? ? [@mail] : @mail.parts).each { |part|
         if part.content_type == 'text/plain' || part.content_type == 'text/html'
           if ((!gettext?) || (gettext? && Locale.get.language == "ja"))
-            if self.mobile && self.mobile.softbank?
+            if @mobile_address && @mobile_address.softbank?
               part.charset = 'utf-8'
               part.body = NKF.nkf('-w', part.body)
               part.transfer_encoding = '8bit'
@@ -91,25 +88,26 @@ module ActionMailer
     #  xx.erb 
     #
     def render_message_with_jpmobile(method_name, body)
-      if jp_mobile_addr = mobile_address
-        self.mobile = jp_mobile_addr
+      if mobile_address?
         vals = []
-        if Array === jp_mobile_addr.career_template_path
-          jp_mobile_addr.career_template_path.each do |tp|
+        if Array === @mobile_address.career_template_path
+          @mobile_address.career_template_path.each do |tp|
             vals << "mobile_#{tp}"
           end
         else
-          vals << "mobile_#{jp_mobile_addr.career_template_path}"
+          vals << "mobile_#{@mobile_address.career_template_path}"
         end
         vals << "mobile"
 
         # 2.2 以降は layout を考慮する。
         if ::ActionMailer::VERSION::MAJOR >=2 && ::ActionMailer::VERSION::MINOR >=2
-          layout_path = active_layout
-          if layout_path
+          if layout_path = active_layout
+            paths = layout_path.to_s.split(File::SEPARATOR)
+            file_name = File.basename(paths.pop).split(".").first
+            layout_dir = paths.join(File::SEPARATOR)
             vals.each do |v|
-              mobile_layout_path = "#{layout_path}_#{v}"
-              template_path = "#{template_root}/#{mobile_layout_path}"
+              mobile_layout_path = "#{file_name}_#{v}"
+              template_path = "#{template_root}/#{layout_dir}/#{mobile_layout_path}"
               template_exists ||= Dir.glob("#{template_path}.*").any? { |i| File.basename(i).split(".").length > 0 }
               if template_exists
                 layout_path = mobile_layout_path
@@ -117,11 +115,11 @@ module ActionMailer
               end
             end
           end
-          self.mobile_layout = layout_path
+          self.mobile_layout = layout_path.to_s
         end
-
+        file_name = File.basename(method_name.to_s).split(".")[0]
         vals.each do |v|
-          mobile_path = "#{method_name}_#{v}"
+          mobile_path = "#{file_name}_#{v}"
           template_path = "#{template_root}/#{mailer_name}/#{mobile_path}"
           template_exists ||= Dir.glob("#{template_path}.*").any? { |i| File.basename(i).split(".").length > 0 }
           return render_message_without_jpmobile(mobile_path, body) if template_exists
@@ -131,8 +129,9 @@ module ActionMailer
     end
 
     def render_with_ja(opts)
-      if ::ActionMailer::VERSION::MAJOR >=2 && ::ActionMailer::VERSION::MINOR >=2
-        render_without_ja(opts.merge(:layout => self.mobile_layout))
+      if ::ActionMailer::VERSION::MAJOR >= 2 && ::ActionMailer::VERSION::MINOR >= 2
+        opts.merge!(:layout => self.mobile_layout) if mobile_address? && !self.mobile_layout.nil?
+        render_without_ja(opts)
       else
         render_without_ja(opts)
       end
@@ -146,6 +145,14 @@ module ActionMailer
 
     protected
 
+    def mobile_address?
+      if @mobile_address.nil?
+        @mobile_address = self.mobile_address
+        @mobile_address = false if @mobile_address.nil?
+      end
+      return @mobile_address
+    end
+
     # 携帯メールアドレスオブジェクトを取得します。
     # 携帯メールアドレスでない場合、 nil が返されます。
     # recipients が複数指定されている場合、最初のメールアドレスで判断します。
@@ -156,10 +163,12 @@ module ActionMailer
         c = ActionMailer::JpMobile.const_get(const)
         next if c.is_a?(Hash)
         if c::MAIL_ADDR_REGEXP =~ email_addr
-          return c.new
+          @mobile_address = c.new
+          return @mobile_address
         end
       end
-      nil
+      @mobile_address = false
+      return nil
     end
 
     # recipient からメールアドレスを取り出します。

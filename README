@@ -4,7 +4,7 @@ ActionmailerJa
 インストールするだけで、ActionMailer が日本語対応になるプラグインです。
 また、携帯電話用のメールテンプレートの振り分け機能も提供します。
 
-Ruby on Rails 2.0 以降に対応しています。
+Ruby on Rails 2.x に対応しています。
 
 
 Example
@@ -106,4 +106,4 @@ knu : http://github.com/knu/
 beyond : http://github.com/beyond/
 
 
-Copyright (c) 2009 KUSAKARI Kei, released under the MIT license
+Copyright (c) 2011 KUSAKARI Kei, released under the MIT license
