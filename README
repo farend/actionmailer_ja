@@ -49,30 +49,6 @@ layout ファイルも上記のテンプレートと同様に、まずキャリ�
 存在しなければ、携帯共通レイアウト、それも存在しなければ通常レイアウトを利用します。
 
 
-*Subject などを Base64 Encode する機能の提供。
-
-ActionMailer は Subject, From, Cc, Recipients に日本語を使うと文字化けしてしまいますが、
-
-以下のオプションを true にすることで、Subject, From, Cc, Recipients を自動的に Base64 Encode することで、
-
-日本語が利用できるようにします。（デフォルト true）
-
-
-ActionMailer::Ja::auto_base64_encode = false
-
-
-自動エンコード機能を使わない場合、例えば以下のように quote_if_necessary を利用します。 
-
-
-class ActionmailerJaTest < ActionMailer::Base
-  def test(user_name, email)
-    @subject     = "㈱テスト№①"
-    @recipients  = quote_if_necessary("#{user_name} <#{email}>", 'iso-2022-jp')
-    @from        = quote_if_necessary("#{$ADMIN_NAME} <#{$ADMIN_MAIL}>", 'iso-2022-jp')
-  end
-end
-
-
 *機種依存文字を代替文字に置換する機能の提供。
 
 iPhone の Mail.app などの MUA では Subject などに①などの機種依存文字を使うと文字化けしてしまいます。

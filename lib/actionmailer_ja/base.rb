@@ -4,9 +4,10 @@ require 'action_mailer/version'
 
 # = ActionMailer::Ja
 # 
-# Ruby on Rails 2.0 以降に対応。
+# Ruby on Rails 2.x に対応。
 module ActionMailer
   module Ja
+    # @auto_base64_encode is *obsoleted*
     # Subject, From, Recipients, Cc を自動的に base64 encode するかの真偽値。（デフォルト true）
     #
     # Examples:
@@ -38,11 +39,12 @@ module ActionMailer
 
     def quote_if_necessary_with_ja(text, charset)
       text = replace_safe_char(text) if auto_replace_safe_char
-      if auto_base64_encode
-        NKF.nkf('-jW -m0 --oc=CP50220', text).strip
-      else
-        quote_if_necessary_without_ja(text, charset)
+      if mobile_address? && @mobile_address.softbank?
+        charset = 'utf-8'
+      elsif charset == 'iso-2022-jp'
+        text = NKF.nkf('-jW -m0 --oc=CP50220', text).strip
       end
+      return quote_if_necessary_without_ja(text, charset)
     end
 
     # Locale があるかどうかで GetText が読み込まれたかを判断する
@@ -55,7 +57,7 @@ module ActionMailer
       (@mail.parts.empty? ? [@mail] : @mail.parts).each { |part|
         if part.content_type == 'text/plain' || part.content_type == 'text/html'
           if ((!gettext?) || (gettext? && Locale.get.language == "ja"))
-            if @mobile_address && @mobile_address.softbank?
+            if mobile_address? && @mobile_address.softbank?
               part.charset = 'utf-8'
               part.body = NKF.nkf('-w', part.body)
               part.transfer_encoding = '8bit'
