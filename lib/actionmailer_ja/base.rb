@@ -44,7 +44,11 @@ module ActionMailer
       elsif charset == 'iso-2022-jp'
         text = NKF.nkf('-jW -m0 --oc=CP50220', text).strip
       end
-      return quote_if_necessary_without_ja(text, charset)
+      if auto_base64_encode
+        text = "=?#{charset}?B?#{NKF.nkf('-jJMB', text)}?="
+      else
+        return quote_if_necessary_without_ja(text, charset)
+      end
     end
 
     # Locale があるかどうかで GetText が読み込まれたかを判断する
